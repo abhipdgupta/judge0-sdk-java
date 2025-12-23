@@ -4,7 +4,7 @@ package io.github.abhipdgupta.judge0;
 import io.github.abhipdgupta.judge0.exceptions.Judge0ConnectionException;
 import io.github.abhipdgupta.judge0.exceptions.Judge0InvalidResponseMapException;
 import io.github.abhipdgupta.judge0.models.*;
-import io.github.abhipdgupta.tryutil.Try;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -151,17 +151,17 @@ public abstract class AbstractJudge0Client implements Judge0Client {
                         "Expected 'submissions' array in batch result");
             }
 
-            List<Judge0SubmissionResult> result =
-                    Try.ofChecked(
-                                    () ->
-                                            objectMapper.readValue(
-                                                    submissionsNode.toString(),
-                                                    new TypeReference<
-                                                            List<Judge0SubmissionResult>>() {}))
-                            .getOrElseThrow(
-                                    e ->
-                                            new Judge0InvalidResponseMapException(
-                                                    "Failed to map batch submission results", e));
+            List<Judge0SubmissionResult> result;
+
+            try {
+                result =
+                        objectMapper.readValue(
+                                submissionsNode.toString(),
+                                new TypeReference<List<Judge0SubmissionResult>>() {});
+            } catch (JacksonException e) {
+                throw new Judge0InvalidResponseMapException(
+                        "Failed to map batch submission results", e);
+            }
 
             return Judge0Response.success(result, 200);
         }
@@ -233,9 +233,15 @@ public abstract class AbstractJudge0Client implements Judge0Client {
     // --- HTTP Helper Methods ---
     private HttpResponse<String> executeRequest(HttpRequest request)
             throws Judge0ConnectionException {
-        return Try.ofChecked(() -> httpClient.send(request, HttpResponse.BodyHandlers.ofString()))
-                .getOrElseThrow(
-                        e -> new Judge0ConnectionException("Failed connecting to server", e));
+        try {
+            return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        } catch (IOException e) {
+            throw new Judge0ConnectionException("Failed connecting to server", e);
+        } catch (InterruptedException e) {
+            throw new Judge0ConnectionException("Failed connecting to server", e);
+        } catch (Exception e) {
+            throw new Judge0ConnectionException("Failed connecting to server", e);
+        }
     }
 
     private HttpResponse<String> executeGetRequest(URI uri) throws Judge0ConnectionException {
@@ -247,8 +253,13 @@ public abstract class AbstractJudge0Client implements Judge0Client {
 
     private <T> HttpResponse<String> executePostRequest(URI uri, T reqBody)
             throws Judge0ConnectionException {
-        String jsonReqBody =
-                Try.ofChecked(() -> objectMapper.writeValueAsString(reqBody)).getOrElseThrow();
+        String jsonReqBody;
+
+        try {
+            jsonReqBody = objectMapper.writeValueAsString(reqBody);
+        } catch (JacksonException e) {
+            throw new Judge0ConnectionException("Failed to serialize request body", e);
+        }
 
         HttpRequest.Builder httpRequestBuilder =
                 HttpRequest.newBuilder(uri)
@@ -263,33 +274,36 @@ public abstract class AbstractJudge0Client implements Judge0Client {
      */
     private URI getUri(String path, Map<String, String> queryParams)
             throws Judge0ConnectionException {
-        return Try.ofChecked(
-                        () -> {
-                            String baseUrl = getBaseUrl();
-                            // Ensure no double slashes at the join
-                            String fullPath =
-                                    (baseUrl.endsWith("/") && path.startsWith("/"))
-                                            ? baseUrl + path.substring(1)
-                                            : (!baseUrl.endsWith("/") && !path.startsWith("/"))
-                                                    ? baseUrl + "/" + path
-                                                    : baseUrl + path;
 
-                            if (queryParams == null || queryParams.isEmpty()) {
-                                return URI.create(fullPath);
-                            }
+        try {
+            String baseUrl = getBaseUrl();
 
-                            String queryString =
-                                    queryParams.entrySet().stream()
-                                            .map(
-                                                    entry ->
-                                                            encodeValue(entry.getKey())
-                                                                    + "="
-                                                                    + encodeValue(entry.getValue()))
-                                            .collect(Collectors.joining("&"));
+            // Ensure no double slashes at the join
+            String fullPath =
+                    (baseUrl.endsWith("/") && path.startsWith("/"))
+                            ? baseUrl + path.substring(1)
+                            : (!baseUrl.endsWith("/") && !path.startsWith("/"))
+                                    ? baseUrl + "/" + path
+                                    : baseUrl + path;
 
-                            return URI.create(fullPath + "?" + queryString);
-                        })
-                .getOrElseThrow(e -> new Judge0ConnectionException("Bad URL construction", e));
+            if (queryParams == null || queryParams.isEmpty()) {
+                return URI.create(fullPath);
+            }
+
+            String queryString =
+                    queryParams.entrySet().stream()
+                            .map(
+                                    entry ->
+                                            encodeValue(entry.getKey())
+                                                    + "="
+                                                    + encodeValue(entry.getValue()))
+                            .collect(Collectors.joining("&"));
+
+            return URI.create(fullPath + "?" + queryString);
+
+        } catch (Exception e) {
+            throw new Judge0ConnectionException("Bad URL construction", e);
+        }
     }
 
     private URI getUri(String path) throws Judge0ConnectionException {
@@ -303,23 +317,30 @@ public abstract class AbstractJudge0Client implements Judge0Client {
     // --- JSON Mapping Helpers ---
     private <T> T castResponse(HttpResponse<String> response, Class<T> clazz)
             throws Judge0InvalidResponseMapException {
-        return Try.ofChecked(() -> objectMapper.readValue(response.body(), clazz))
-                .getOrElseThrow(
-                        e -> new Judge0InvalidResponseMapException("Unexpected response", e));
+        try {
+            return objectMapper.readValue(response.body(), clazz);
+        } catch (JacksonException e) {
+            throw new Judge0InvalidResponseMapException("Unexpected response", e);
+        }
     }
 
     private JsonNode castResponseToNode(HttpResponse<String> response)
             throws Judge0InvalidResponseMapException {
-        return Try.ofChecked(() -> objectMapper.readTree(response.body()))
-                .getOrElseThrow(
-                        e -> new Judge0InvalidResponseMapException("Unexpected response", e));
+
+        try {
+            return objectMapper.readTree(response.body());
+        } catch (JacksonException e) {
+            throw new Judge0InvalidResponseMapException("Unexpected response", e);
+        }
     }
 
     private <T> T castResponse(HttpResponse<String> response, TypeReference<T> reference)
             throws Judge0InvalidResponseMapException {
-        return Try.ofChecked(() -> objectMapper.readValue(response.body(), reference))
-                .getOrElseThrow(
-                        e -> new Judge0InvalidResponseMapException("Unexpected response", e));
+        try {
+            return objectMapper.readValue(response.body(), reference);
+        } catch (JacksonException e) {
+            throw new Judge0InvalidResponseMapException("Unexpected response", e);
+        }
     }
 
     private <T> Judge0Response<T> handleResponseForError(HttpResponse<String> res)
