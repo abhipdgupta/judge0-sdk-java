@@ -17,11 +17,6 @@ You need to add two repositories to your `pom.xml` file. One for the `judge0-sdk
         <name>GitHub abhipdgupta Apache Maven Packages</name>
         <url>https://maven.pkg.github.com/abhipdgupta/judge0-sdk-java</url>
     </repository>
-    <repository>
-        <id>github-try-util</id>
-        <name>GitHub abhipdgupta try-util-java Apache Maven Packages</name>
-        <url>https://maven.pkg.github.com/abhipdgupta/try-util-java</url>
-    </repository>
 </repositories>
 ```
 
