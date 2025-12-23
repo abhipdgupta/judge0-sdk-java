@@ -25,7 +25,21 @@ jobs:
           settings-path: ${{ github.workspace }} # location for the settings.xml file
           dependency-graph: disable
 
-      # 1. NEW STEP: Check Code Formatting (Since you installed Spotless)
+      - name: Set up Maven settings
+        run: |
+          mkdir -p ~/.m2
+          cat <<EOF > ~/.m2/settings.xml
+          <settings>
+              <servers>
+                  <server>
+                  <id>github</id>
+                  <username>${{ github.actor }}</username>
+                  <password>${{ secrets.GITHUB_TOKEN }}</password>
+                  </server>
+              </servers>
+          </settings>
+          EOF
+
       - name: Check Formatting
         run: mvn spotless:check
 
@@ -33,7 +47,6 @@ jobs:
       #   - name: Run Tests
       #     run: mvn test
 
-      # 3. UPDATED STEP: Build (Skipping tests because we just ran them)
       - name: Build with Maven
         run: mvn -B package -DskipTests --file pom.xml
 
