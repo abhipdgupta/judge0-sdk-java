@@ -62,7 +62,6 @@ public abstract class AbstractJudge0Client implements Judge0Client {
             CreateJudge0SubmissionRequest request, boolean base64Encoded, boolean waitFor)
             throws Judge0ConnectionException, Judge0InvalidResponseMapException {
 
-        // Use Map for query params instead of Apache NameValuePair
         URI uri =
                 getUri(
                         "/submissions",
@@ -259,7 +258,6 @@ public abstract class AbstractJudge0Client implements Judge0Client {
         return executeRequest(httpRequestBuilder.build());
     }
 
-    // --- URI Building Replacements (No Apache HTTP) ---
     /**
      * Builds a URI with optional query parameters using native Java classes.
      */

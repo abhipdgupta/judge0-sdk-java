@@ -29,9 +29,9 @@ jobs:
       - name: Check Formatting
         run: mvn spotless:check
 
-      # 2. NEW STEP: Run Unit Tests explicitly
-      - name: Run Tests
-        run: mvn test
+      #   # no test added yet
+      #   - name: Run Tests
+      #     run: mvn test
 
       # 3. UPDATED STEP: Build (Skipping tests because we just ran them)
       - name: Build with Maven
